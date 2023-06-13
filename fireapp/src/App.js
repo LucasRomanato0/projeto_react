@@ -12,7 +12,12 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
 
 import "./app.css";
 
@@ -23,6 +28,9 @@ function App() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+
+  const [user, setUser] = useState(false);
+  const [userDetail, setUserDetail] = useState({});
 
   const [posts, setPosts] = useState([]);
 
@@ -45,6 +53,30 @@ function App() {
     }
 
     loadPosts();
+  }, []);
+
+  //deixa o usuario logado
+  useEffect(() => {
+    async function checkLogin() {
+      //é um observer
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          //se tem usuario logado
+          console.log(user);
+          setUser(true);
+          setUserDetail({
+            id: user.uid,
+            email: user.email,
+          });
+        } else {
+          //nao tem usuario logado
+          setUser(false);
+          setUserDetail({});
+        }
+      });
+    }
+
+    checkLogin();
   }, []);
 
   async function handleAdd() {
@@ -150,9 +182,47 @@ function App() {
       });
   }
 
+  async function logarUsuario() {
+    await signInWithEmailAndPassword(auth, email, senha)
+      .then((value) => {
+        console.log("USER LOGADO COM SUCESSO");
+        console.log(value.user);
+
+        setUserDetail({
+          id: value.user.uid,
+          email: value.user.email,
+        });
+        setUser(true);
+
+        setEmail("");
+        setSenha("");
+      })
+      .catch(() => {
+        console.log("ERRO AO FAZER LOGIN");
+      });
+  }
+
+  async function logout() {
+    await signOut(auth);
+    setUser(false);
+    setUserDetail({});
+  }
+
   return (
     <div className="App">
       <h1>React js + Firebase</h1>
+
+      {user && (
+        <div>
+          <strong>Seja bem-vindo(a) (Você está logado)</strong> <br />
+          <span>
+            ID: {userDetail.id} - Email: {userDetail.email}
+          </span>
+          <br />
+          <button onClick={logout}>Logout</button>
+          <br /> <br />
+        </div>
+      )}
 
       <div className="container">
         <h2>Usuários</h2>
@@ -172,6 +242,7 @@ function App() {
           placeholder="Informe sua senha"
         />{" "}
         <button onClick={novoUsuario}>Cadastrar</button>
+        <button onClick={logarUsuario}>Login</button>
       </div>
 
       <br />
