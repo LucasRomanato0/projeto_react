@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { db } from "./firebaseConnection";
+import { useState, useEffect } from "react";
+import { db, auth } from "./firebaseConnection";
 import {
   doc,
   setDoc,
@@ -9,7 +9,10 @@ import {
   getDocs,
   updateDoc,
   deleteDoc,
+  onSnapshot,
 } from "firebase/firestore";
+
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 import "./app.css";
 
@@ -18,7 +21,31 @@ function App() {
   const [autor, setAutor] = useState("");
   const [idPost, setIdPost] = useState("");
 
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+
   const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    //atualiza a tela sempre que o banco mudar algo
+    async function loadPosts() {
+      const unsub = onSnapshot(collection(db, "posts"), (snapshot) => {
+        let listaPost = [];
+
+        snapshot.forEach((doc) => {
+          listaPost.push({
+            id: doc.id,
+            titulo: doc.data().titulo,
+            autor: doc.data().autor,
+          });
+        });
+
+        setPosts(listaPost);
+      });
+    }
+
+    loadPosts();
+  }, []);
 
   async function handleAdd() {
     // await setDoc(doc(db, "posts", "12345"), {
@@ -107,11 +134,52 @@ function App() {
     });
   }
 
+  async function novoUsuario() {
+    await createUserWithEmailAndPassword(auth, email, senha)
+      .then(() => {
+        console.log("CADASTRADO COM SUCESSO");
+        setEmail("");
+        setSenha("");
+      })
+      .catch((error) => {
+        if (error.code === "auth/weak-password") {
+          alert("Senha muito fraca.");
+        } else if (error.code === "auth/email-already-in-use") {
+          alert("Email já existe");
+        }
+      });
+  }
+
   return (
     <div className="App">
       <h1>React js + Firebase</h1>
 
       <div className="container">
+        <h2>Usuários</h2>
+        <label>Email</label>
+        <input
+          value={email}
+          type="email"
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Digite um email"
+        />{" "}
+        <br />
+        <label>Senha</label>
+        <input
+          value={senha}
+          type="password"
+          onChange={(e) => setSenha(e.target.value)}
+          placeholder="Informe sua senha"
+        />{" "}
+        <button onClick={novoUsuario}>Cadastrar</button>
+      </div>
+
+      <br />
+      <br />
+      <hr />
+
+      <div className="container">
+        <h2>Posts</h2>
         <label>ID do Post: </label>
         <input
           placeholder="Digite o ID do post"
