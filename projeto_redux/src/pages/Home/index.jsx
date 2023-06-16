@@ -1,16 +1,21 @@
-import styles from './home.module.css'
-import { Header } from '../../components/header'
-import { Link } from 'react-router-dom'
+import styles from "./home.module.css";
+import { Header } from "../../components/header";
+import { Link } from "react-router-dom";
+
+import { useSelector } from "react-redux";
 
 export function Home() {
+  const { user } = useSelector((rootReducer) => rootReducer.user);
 
-  function handleDeleteAddress(){
-    alert("Endereço deletado com sucesso!")
+  console.log(user);
+
+  function handleDeleteAddress() {
+    alert("Endereço deletado com sucesso!");
   }
 
   return (
     <>
-    <Header/>
+      <Header />
       <div className={styles.container}>
         <nav className={styles.nav}>
           <Link to="/" className={styles.link}>
@@ -27,23 +32,28 @@ export function Home() {
         <main className={styles.content}>
           <div className={styles.message}>
             <h1 className={styles.title}>
-              Olá Visitante, bem vindo!
+              Olá {user ? user.name : "Visitante"}, bem vindo!
             </h1>
 
-            <span>Email: ....</span>
+            {user && <span>Email: {user.email}</span>}
 
+            {user && user.address && (
+              <>
+                <strong className={styles.addressLabel}>Endereço atual:</strong>
+                <div className={styles.address}>
+                  <p>
+                    {user.address.location}, n {user.address.number}
+                  </p>
 
-            <strong className={styles.addressLabel}>Endereço atual:</strong>
-            <div className={styles.address}>
-              <p>Rua centro, n 123</p>
-              
-              <button onClick={handleDeleteAddress}>Deletar endereço</button>
-            </div>
-
+                  <button onClick={handleDeleteAddress}>
+                    Deletar endereço
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-
         </main>
       </div>
     </>
-  )
+  );
 }
