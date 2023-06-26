@@ -2,17 +2,68 @@ import { FiPlusCircle } from "react-icons/fi";
 import Navbar from "../../components/Navbar";
 import Title from "../../components/Title";
 import "./new.css";
-import { useState } from "react";
+import { useState, useEffect, useContext } from "react";
+
+import { AuthContext } from "../../contexts/auth";
+import { db } from "../../services/firebaseConnection";
+import { collection, getDoc, getDocs, doc } from "firebase/firestore";
+
+const listRef = collection(db, "customers");
 
 export default function New() {
+  const { user } = useContext(AuthContext);
+
   const [customers, setCustomers] = useState([]);
+  const [customerSelected, setCustomerSelected] = useState(0);
+  const [loadCustomer, setLoadCustomer] = useState(true);
 
   const [complemento, setComplemento] = useState("");
   const [assunto, setAssunto] = useState("Suporte");
   const [status, setStatus] = useState("Aberto");
 
+  useEffect(() => {
+    async function loadCustomers() {
+      const querySnapshot = await getDocs(listRef)
+        .then((snapshot) => {
+          let lista = [];
+
+          snapshot.forEach((doc) => {
+            lista.push({
+              id: doc.id,
+              nomeEmpresa: doc.data().nomeEmpresa,
+            });
+          });
+
+          if (snapshot.docs.size === 0) {
+            console.log("NENHUMA EMPRESA ENCONTRADA");
+            setCustomers([{ id: 1, nomeEmpresa: "FREELA" }]);
+            setLoadCustomer(false);
+            return;
+          }
+
+          setCustomers(lista);
+          setLoadCustomer(false);
+        })
+        .catch((error) => {
+          console.log("Erro ao buscar os clientes", error);
+          setLoadCustomer(false);
+          setCustomers([{ id: 1, nomeEmpresa: "FREELA" }]);
+        });
+    }
+
+    loadCustomers();
+  }, []);
+
   function handleOptionChange(e) {
     setStatus(e.target.value);
+  }
+
+  function handleChangeSelect(e) {
+    setAssunto(e.target.value);
+  }
+
+  function handleChangeCustomer(e) {
+    setCustomerSelected(e.target.value);
   }
 
   return (
@@ -27,17 +78,22 @@ export default function New() {
         <div className="container">
           <form className="form-profile">
             <label>Clientes</label>
-            <select>
-              <option key={1} value={1}>
-                Mercado Teste
-              </option>
-              <option key={2} value={2}>
-                Loja informatica
-              </option>
-            </select>
+            {loadCustomer ? (
+              <input type="text" disabled={true} value={"Carregando..."} />
+            ) : (
+              <select value={customerSelected} onChange={handleChangeCustomer}>
+                {customers.map((item, index) => {
+                  return (
+                    <option key={index} value={index}>
+                      {item.nomeEmpresa}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
 
             <label>Assunto</label>
-            <select>
+            <select value={assunto} onChange={handleChangeSelect}>
               <option value="Suporte">Suporte</option>
 
               <option value="Visita Técnica">Visita Técnica</option>
